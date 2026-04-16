@@ -7,8 +7,8 @@ import { ChatPanel } from "./chat-panel"
 import { ToolDetailsPanel } from "./tool-details-panel"
 import type { Patient, Message, ToolCall } from "@/lib/types"
 
-const USER_STORAGE_KEY = "dermacare_user_id"
-const APP_STATE_KEY = "dermacare_app_state_v1"
+const USER_STORAGE_KEY = "achieva_user_id"
+const APP_STATE_KEY = "achieva_app_state_v1"
 const MAX_MESSAGES_PER_SESSION = 20
 
 function generateId(): string {
@@ -70,8 +70,8 @@ export function DermaCareApp() {
     () => [
       {
         id: `pt_${generateId()}`,
-        name: "New Consultation",
-        condition: "Pending",
+        name: "New Chat",
+        condition: "New",
         date: getCurrentDate(),
         isActive: true,
         sessionId: initialSessionId,
@@ -152,8 +152,8 @@ export function DermaCareApp() {
     const newSessionId = `sess_${generateId()}`
     const newPatient: Patient = {
       id: `pt_${generateId()}`,
-      name: "New Consultation",
-      condition: "Pending",
+      name: "New Chat",
+      condition: "New",
       date: getCurrentDate(),
       isActive: true,
       sessionId: newSessionId,
@@ -385,7 +385,7 @@ export function DermaCareApp() {
   )
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50">
+    <div className="flex h-screen flex-col bg-[#f3f5f9]">
       <Header />
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <PatientSidebar
@@ -397,7 +397,6 @@ export function DermaCareApp() {
           onNewChat={handleNewChat}
         />
         <ChatPanel
-          patient={selectedPatient}
           messages={messages}
           isLoading={isLoading}
           selectedTool={selectedTool}

@@ -25,26 +25,26 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
   if (!tool) {
     return (
       <aside className="w-80 border-l border-slate-200 bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-slate-900">Tool Details</h2>
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">Details</h2>
         <div className="flex h-64 items-center justify-center text-center text-sm text-slate-400">
-          Select a tool from the AI Reasoning flow to view details
+          Click one item in the details card to view tool output.
         </div>
       </aside>
     )
   }
 
   const statusIcon = {
-    running: <Loader2 className="h-5 w-5 animate-spin text-sky-500" />,
+    running: <Loader2 className="h-5 w-5 animate-spin text-blue-500" />,
     completed: <CheckCircle className="h-5 w-5 text-green-500" />,
     error: <AlertCircle className="h-5 w-5 text-red-500" />,
     pending: <Loader2 className="h-5 w-5 text-slate-400" />,
-    active: <Loader2 className="h-5 w-5 animate-spin text-sky-500" />,
+    active: <Loader2 className="h-5 w-5 animate-spin text-blue-500" />,
   }
 
   return (
     <aside className="flex w-80 flex-col border-l border-slate-200 bg-white">
       <div className="border-b border-slate-200 p-4">
-        <h2 className="text-lg font-semibold text-slate-900">Tool Details</h2>
+        <h2 className="text-lg font-semibold text-slate-900">Details</h2>
       </div>
 
       <ScrollArea className="flex-1">
@@ -62,7 +62,7 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
                     ? "bg-green-100 text-green-700"
                     : tool.status === "error"
                       ? "bg-red-100 text-red-700"
-                      : "bg-sky-100 text-sky-700"
+                      : "bg-blue-100 text-blue-700"
                 }`}
               >
                 {tool.status.charAt(0).toUpperCase() + tool.status.slice(1)}
@@ -100,9 +100,9 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
 
           {/* Running state */}
           {tool.status === "running" && (
-            <div className="rounded-lg bg-sky-50 p-4 text-center">
-              <Loader2 className="h-6 w-6 animate-spin text-sky-500 mx-auto mb-2" />
-              <p className="text-sm text-sky-700">Tool is executing...</p>
+            <div className="rounded-lg bg-blue-50 p-4 text-center">
+              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mx-auto mb-2" />
+              <p className="text-sm text-blue-700">Tool is executing...</p>
             </div>
           )}
         </div>

@@ -57,15 +57,26 @@ export function ChatPanel({
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const shouldAutoScrollRef = useRef(true)
 
   useEffect(() => {
     const lastMessage = messages[messages.length - 1]
     if (lastMessage?.toolCalls && lastMessage.toolCalls.length > 0) {
       setExpandedMessages((prev) => new Set([...prev, lastMessage.id]))
     }
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    if (shouldAutoScrollRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" })
+    }
   }, [messages])
+
+  const handleMessagesScroll = () => {
+    const container = messagesContainerRef.current
+    if (!container) return
+    const distanceToBottom = container.scrollHeight - container.scrollTop - container.clientHeight
+    shouldAutoScrollRef.current = distanceToBottom < 120
+  }
 
   const toggleExpanded = (messageId: string) => {
     setExpandedMessages((prev) => {
@@ -111,7 +122,7 @@ export function ChatPanel({
 
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-[#f3f5f9]">
-      <div className="min-h-0 flex-1 overflow-y-auto p-6">
+      <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="min-h-0 flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-5xl space-y-4">
           {messages.map((message) => (
             <div key={message.id} className="space-y-2">

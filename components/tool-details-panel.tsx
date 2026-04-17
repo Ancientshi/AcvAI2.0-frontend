@@ -14,6 +14,30 @@ interface ToolDetailsPanelProps {
 export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
   const [copied, setCopied] = useState(false)
 
+  const parseAsJson = (value: string): unknown | null => {
+    const trimmed = value.trim()
+    if (!trimmed) return null
+
+    const tryParse = (input: string) => {
+      try {
+        return JSON.parse(input)
+      } catch {
+        return null
+      }
+    }
+
+    const direct = tryParse(trimmed)
+    if (direct !== null) {
+      if (typeof direct === "string") {
+        const nested = tryParse(direct)
+        if (nested !== null) return nested
+      }
+      return direct
+    }
+
+    return null
+  }
+
   const handleCopy = () => {
     if (tool?.result) {
       navigator.clipboard.writeText(tool.result)
@@ -40,6 +64,9 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
     pending: <Loader2 className="h-5 w-5 text-slate-400" />,
     active: <Loader2 className="h-5 w-5 animate-spin text-blue-500" />,
   }
+
+  const parsedResult = tool.result ? parseAsJson(tool.result) : null
+  const hasJsonResult = parsedResult !== null
 
   return (
     <aside className="flex w-80 flex-col border-l border-slate-200 bg-white">
@@ -87,13 +114,19 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
           {tool.result && (
             <div className="rounded-lg border border-slate-200 p-4">
               <div className="flex items-center justify-between mb-2">
-                <h4 className="font-medium text-slate-700">Result</h4>
+                <h4 className="font-medium text-slate-700">Result {hasJsonResult ? "(JSON)" : ""}</h4>
                 <Button variant="ghost" size="sm" className="h-7 px-2" onClick={handleCopy}>
                   {copied ? <Check className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
                 </Button>
               </div>
               <div className="bg-slate-50 rounded-lg p-3 max-h-96 overflow-y-auto">
-                <MarkdownRenderer content={tool.result} className="text-sm" />
+                {hasJsonResult ? (
+                  <pre className="text-xs font-mono text-slate-700 whitespace-pre-wrap break-words">
+                    {JSON.stringify(parsedResult, null, 2)}
+                  </pre>
+                ) : (
+                  <MarkdownRenderer content={tool.result} className="text-sm" />
+                )}
               </div>
             </div>
           )}

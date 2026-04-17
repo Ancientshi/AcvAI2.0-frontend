@@ -61,6 +61,14 @@ function trimMessagesMap(map: Record<string, Message[]>, maxN: number) {
   return out
 }
 
+function getLastActivityAt(messages: Message[] | undefined): number {
+  if (!messages || messages.length === 0) return 0
+  return messages.reduce((latest, message) => {
+    const ts = Number.parseInt(message.id, 10)
+    return Number.isFinite(ts) ? Math.max(latest, ts) : latest
+  }, 0)
+}
+
 export function DermaCareApp() {
   const [userId, setUserId] = useState<string>("")
 
@@ -378,11 +386,17 @@ export function DermaCareApp() {
     [selectedPatient.sessionId, userId, appendAndTrim, updateAssistantInSession, messagesBySession],
   )
 
-  const filteredPatients = patients.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.condition.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  const filteredPatients = patients
+    .filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.condition.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const latestA = getLastActivityAt(messagesBySession[a.sessionId])
+      const latestB = getLastActivityAt(messagesBySession[b.sessionId])
+      return latestB - latestA
+    })
 
   return (
     <div className="flex h-screen flex-col bg-[#f3f5f9]">

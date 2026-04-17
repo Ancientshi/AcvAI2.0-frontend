@@ -71,6 +71,8 @@ function getLastActivityAt(messages: Message[] | undefined): number {
 
 export function DermaCareApp() {
   const [userId, setUserId] = useState<string>("")
+  const [toolPanelWidth, setToolPanelWidth] = useState(320)
+  const isResizingToolPanelRef = useRef(false)
 
   // === 默认初始会话 ===
   const initialSessionId = useMemo(() => `sess_${generateId()}`, [])
@@ -196,6 +198,42 @@ export function DermaCareApp() {
       abortControllerRef.current.abort()
       abortControllerRef.current = null
       setIsLoading(false)
+    }
+  }, [])
+
+  const handleToolPanelResizeStart = useCallback(() => {
+    isResizingToolPanelRef.current = true
+    document.body.style.cursor = "col-resize"
+    document.body.style.userSelect = "none"
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const minWidth = 280
+    const maxWidth = 720
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (!isResizingToolPanelRef.current) return
+      const nextWidth = window.innerWidth - event.clientX
+      const clampedWidth = Math.min(Math.max(nextWidth, minWidth), maxWidth)
+      setToolPanelWidth(clampedWidth)
+    }
+
+    const handleMouseUp = () => {
+      isResizingToolPanelRef.current = false
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+      document.body.style.cursor = ""
+      document.body.style.userSelect = ""
     }
   }, [])
 
@@ -418,7 +456,13 @@ export function DermaCareApp() {
           onSendMessage={handleSendMessage}
           onStopGeneration={handleStopGeneration}
         />
-        <ToolDetailsPanel tool={selectedTool} />
+        <button
+          type="button"
+          aria-label="Resize tool details panel"
+          onMouseDown={handleToolPanelResizeStart}
+          className="w-1 cursor-col-resize bg-slate-200 transition-colors hover:bg-slate-300"
+        />
+        <ToolDetailsPanel tool={selectedTool} width={toolPanelWidth} />
       </div>
     </div>
   )

@@ -9,9 +9,10 @@ import { useState } from "react"
 
 interface ToolDetailsPanelProps {
   tool: ToolCall | null
+  width?: number
 }
 
-export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
+export function ToolDetailsPanel({ tool, width = 320 }: ToolDetailsPanelProps) {
   const [copied, setCopied] = useState(false)
 
   const parseAsJson = (value: string): unknown | null => {
@@ -48,7 +49,7 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
 
   if (!tool) {
     return (
-      <aside className="w-80 border-l border-slate-200 bg-white p-6">
+      <aside style={{ width }} className="border-l border-slate-200 bg-white p-6">
         <h2 className="mb-4 text-lg font-semibold text-slate-900">Details</h2>
         <div className="flex h-64 items-center justify-center text-center text-sm text-slate-400">
           Click one item in the details card to view tool output.
@@ -69,7 +70,7 @@ export function ToolDetailsPanel({ tool }: ToolDetailsPanelProps) {
   const hasJsonResult = parsedResult !== null
 
   return (
-    <aside className="flex w-80 flex-col border-l border-slate-200 bg-white">
+    <aside style={{ width }} className="flex flex-col border-l border-slate-200 bg-white">
       <div className="border-b border-slate-200 p-4">
         <h2 className="text-lg font-semibold text-slate-900">Details</h2>
       </div>

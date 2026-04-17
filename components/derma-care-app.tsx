@@ -69,7 +69,7 @@ function getLastActivityAt(messages: Message[] | undefined): number {
   }, 0)
 }
 
-export function DermaCareApp() {
+export function AchivaApp() {
   const [userId, setUserId] = useState<string>("")
   const [toolPanelWidth, setToolPanelWidth] = useState(320)
   const isResizingToolPanelRef = useRef(false)

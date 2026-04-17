@@ -1,0 +1,23 @@
+<svg width="520" height="110" viewBox="0 0 520 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6C3CFF" />
+      <stop offset="100%" stop-color="#2AD6FF" />
+    </linearGradient>
+    <linearGradient id="wordMark" x1="20" y1="0" x2="500" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#8A2CFF" />
+      <stop offset="55%" stop-color="#2A6DFF" />
+      <stop offset="100%" stop-color="#00CBFF" />
+    </linearGradient>
+  </defs>
+
+  <rect x="4" y="6" width="88" height="88" rx="18" fill="url(#iconBg)" />
+  <path d="M27 50L66 28C70 26 75 30 73 34L57 74C56 77 53 79 50 79H31C25 79 22 71 27 67L45 52H27Z" fill="#EAF8FF" />
+
+  <text x="106" y="78" font-family="Inter, Arial, sans-serif" font-size="70" font-weight="800" fill="url(#wordMark)" letter-spacing="1.5">
+    ACHIEVA
+  </text>
+  <text x="460" y="74" font-family="Inter, Arial, sans-serif" font-size="40" font-weight="800" fill="url(#wordMark)">
+    AI
+  </text>
+</svg>

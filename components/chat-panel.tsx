@@ -122,16 +122,70 @@ export function ChatPanel({
   }
 
   const handleDownloadSession = () => {
+    const escapeHtml = (text: string) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    const renderMarkdownForPdf = (content: string) => {
+      const lines = content.split("\n")
+      const blocks: string[] = []
+      let listType: "ul" | "ol" | null = null
+      let listItems: string[] = []
+
+      const flushList = () => {
+        if (!listType || listItems.length === 0) return
+        const items = listItems.map((item) => `<li>${item}</li>`).join("")
+        blocks.push(`<${listType} class="md-list">${items}</${listType}>`)
+        listType = null
+        listItems = []
+      }
+
+      const inline = (text: string) => {
+        let html = escapeHtml(text)
+        html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+        html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+        html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>")
+        html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        return html
+      }
+
+      for (const rawLine of lines) {
+        const line = rawLine.trimStart()
+        if (line.trim() === "") {
+          flushList()
+          continue
+        }
+        if (/^[-*•]\s+/.test(line)) {
+          if (listType !== "ul") {
+            flushList()
+            listType = "ul"
+          }
+          listItems.push(inline(line.replace(/^[-*•]\s+/, "")))
+          continue
+        }
+        if (/^\d+[.)]\s+/.test(line)) {
+          if (listType !== "ol") {
+            flushList()
+            listType = "ol"
+          }
+          listItems.push(inline(line.replace(/^\d+[.)]\s+/, "")))
+          continue
+        }
+        flushList()
+        if (line.startsWith("### ")) blocks.push(`<h3>${inline(line.slice(4))}</h3>`)
+        else if (line.startsWith("## ")) blocks.push(`<h2>${inline(line.slice(3))}</h2>`)
+        else if (line.startsWith("# ")) blocks.push(`<h1>${inline(line.slice(2))}</h1>`)
+        else if (line.startsWith("> ")) blocks.push(`<blockquote>${inline(line.slice(2))}</blockquote>`)
+        else if (/^(-{3,}|_{3,}|\*{3,})$/.test(line)) blocks.push("<hr/>")
+        else blocks.push(`<p>${inline(line)}</p>`)
+      }
+      flushList()
+      return blocks.join("")
+    }
+
     const timestamp = new Date().toLocaleString()
     const conversationRows = messages
       .filter((message) => message.content?.trim())
       .map((message, index) => {
         const roleLabel = message.role === "user" ? "Client" : "Achieva AI"
-        const escapedContent = message.content
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/\n/g, "<br/>")
+        const renderedContent = renderMarkdownForPdf(message.content)
 
         return `
           <div class="message-block">
@@ -139,7 +193,7 @@ export function ChatPanel({
               <span class="message-index">#${index + 1}</span>
               <span class="message-role">${roleLabel}</span>
             </div>
-            <div class="message-content">${escapedContent}</div>
+            <div class="message-content">${renderedContent}</div>
           </div>
         `
       })
@@ -168,6 +222,15 @@ export function ChatPanel({
             .message-meta { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; font-size: 12px; color: #475569; }
             .message-index { font-weight: 700; color: #1d4ed8; }
             .message-content { padding: 12px; line-height: 1.65; font-size: 13px; background: white; }
+            .message-content h1, .message-content h2, .message-content h3 { margin: 10px 0 6px; color: #0f172a; }
+            .message-content h1 { font-size: 20px; }
+            .message-content h2 { font-size: 17px; }
+            .message-content h3 { font-size: 15px; }
+            .message-content p { margin: 6px 0; }
+            .message-content .md-list { margin: 8px 0; padding-left: 20px; }
+            .message-content blockquote { margin: 8px 0; padding-left: 10px; border-left: 3px solid #93c5fd; color: #334155; }
+            .message-content hr { border: 0; border-top: 1px solid #cbd5e1; margin: 10px 0; }
+            .message-content .inline-code { background: #e2e8f0; border-radius: 4px; padding: 1px 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
             .footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; }
             @media print { body { background: white; } .page { padding: 24px 30px; } }
           </style>

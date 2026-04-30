@@ -128,13 +128,14 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
 
     while (i < lines.length) {
       const line = lines[i]
+      const trimmedStartLine = line.trimStart()
 
       // Code block start/end
-      if (line.startsWith("```")) {
+      if (trimmedStartLine.startsWith("```")) {
         if (!inCodeBlock) {
           flushList()
           inCodeBlock = true
-          codeBlockLang = line.slice(3).trim()
+          codeBlockLang = trimmedStartLine.slice(3).trim()
           codeBlockContent = []
         } else {
           elements.push(
@@ -157,31 +158,31 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
       }
 
       // Headers
-      if (line.startsWith("### ")) {
+      if (trimmedStartLine.startsWith("### ")) {
         flushList()
         elements.push(
           <h3 key={`h3-${i}`} className="text-lg font-semibold text-slate-900 mt-4 mb-2">
-            {renderInline(line.slice(4))}
+            {renderInline(trimmedStartLine.slice(4))}
           </h3>,
         )
         i++
         continue
       }
-      if (line.startsWith("## ")) {
+      if (trimmedStartLine.startsWith("## ")) {
         flushList()
         elements.push(
           <h2 key={`h2-${i}`} className="text-xl font-semibold text-slate-900 mt-5 mb-2">
-            {renderInline(line.slice(3))}
+            {renderInline(trimmedStartLine.slice(3))}
           </h2>,
         )
         i++
         continue
       }
-      if (line.startsWith("# ")) {
+      if (trimmedStartLine.startsWith("# ")) {
         flushList()
         elements.push(
           <h1 key={`h1-${i}`} className="text-2xl font-bold text-slate-900 mt-6 mb-3">
-            {renderInline(line.slice(2))}
+            {renderInline(trimmedStartLine.slice(2))}
           </h1>,
         )
         i++
@@ -226,11 +227,11 @@ export function MarkdownRenderer({ content, className = "" }: MarkdownRendererPr
       }
 
       // Blockquote
-      if (line.startsWith("> ")) {
+      if (trimmedStartLine.startsWith("> ")) {
         flushList()
         elements.push(
           <blockquote key={`quote-${i}`} className="border-l-4 border-sky-300 pl-4 py-1 my-2 text-slate-600 italic">
-            {renderInline(line.slice(2))}
+            {renderInline(trimmedStartLine.slice(2))}
           </blockquote>,
         )
         i++

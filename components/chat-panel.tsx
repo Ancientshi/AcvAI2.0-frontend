@@ -15,6 +15,7 @@ import {
   Search,
   Database,
   Loader2,
+  Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -120,10 +121,204 @@ export function ChatPanel({
     }
   }
 
+  const handleDownloadSession = () => {
+    const timestamp = new Date().toLocaleString()
+
+    const toSafeHtml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+
+    const renderInlineMarkdownForPdf = (value: string) => {
+      let html = toSafeHtml(value)
+      html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+      html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+      html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
+      html = html.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>')
+      return html
+    }
+
+    const renderMarkdownForPdf = (value: string) => {
+      const lines = value.split("\n")
+      const htmlBlocks: string[] = []
+      let listType: "ul" | "ol" | null = null
+      let listItems: string[] = []
+
+      const flushList = () => {
+        if (!listType || listItems.length === 0) return
+        const tag = listType
+        htmlBlocks.push(`<${tag}>${listItems.map((item) => `<li>${item}</li>`).join("")}</${tag}>`)
+        listType = null
+        listItems = []
+      }
+
+      for (const rawLine of lines) {
+        const line = rawLine.trimEnd()
+        if (!line.trim()) {
+          flushList()
+          continue
+        }
+        if (/^###\s+/.test(line)) {
+          flushList()
+          htmlBlocks.push(`<h3>${renderInlineMarkdownForPdf(line.replace(/^###\s+/, ""))}</h3>`)
+          continue
+        }
+        if (/^##\s+/.test(line)) {
+          flushList()
+          htmlBlocks.push(`<h2>${renderInlineMarkdownForPdf(line.replace(/^##\s+/, ""))}</h2>`)
+          continue
+        }
+        if (/^#\s+/.test(line)) {
+          flushList()
+          htmlBlocks.push(`<h1>${renderInlineMarkdownForPdf(line.replace(/^#\s+/, ""))}</h1>`)
+          continue
+        }
+        if (/^\s*[-*]\s+/.test(line)) {
+          if (listType !== "ul") flushList(), (listType = "ul")
+          listItems.push(renderInlineMarkdownForPdf(line.replace(/^\s*[-*]\s+/, "")))
+          continue
+        }
+        if (/^\s*\d+[.)]\s+/.test(line)) {
+          if (listType !== "ol") flushList(), (listType = "ol")
+          listItems.push(renderInlineMarkdownForPdf(line.replace(/^\s*\d+[.)]\s+/, "")))
+          continue
+        }
+        if (/^(-{3,}|_{3,}|\*{3,})$/.test(line.trim())) {
+          flushList()
+          htmlBlocks.push("<hr/>")
+          continue
+        }
+
+        flushList()
+        htmlBlocks.push(`<p>${renderInlineMarkdownForPdf(line)}</p>`)
+      }
+
+      flushList()
+      return htmlBlocks.join("")
+    }
+
+    const conversationRows = messages
+      .filter((message) => message.content?.trim())
+      .map((message, index) => {
+        const roleLabel = message.role === "user" ? "Client" : "Achieva AI"
+        const formattedContent = renderMarkdownForPdf(message.content)
+
+        return `
+          <div class="message-block">
+            <div class="message-meta">
+              <span class="message-index">#${index + 1}</span>
+              <span class="message-role">${roleLabel}</span>
+            </div>
+            <div class="message-content">${formattedContent}</div>
+          </div>
+        `
+      })
+      .join("")
+
+    const reportHtml = `
+      <html>
+        <head>
+          <title>Achieva Session Report</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Inter, Arial, sans-serif; color: #0f172a; background: #f8fafc; }
+            .page { position: relative; padding: 40px 50px; min-height: 100vh; background: white; }
+            .watermark { position: fixed; top: 45%; left: 20%; font-size: 84px; color: rgba(59, 130, 246, 0.08); transform: rotate(-24deg); font-weight: 800; pointer-events: none; }
+            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #dbeafe; padding-bottom: 16px; margin-bottom: 28px; }
+            .brand { display: flex; align-items: center; gap: 12px; }
+            .logo-chip { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #3a6ff9, #5f7ff0); color: white; display:flex; align-items:center; justify-content:center; font-weight: 700; }
+            .title { font-size: 22px; font-weight: 700; margin: 0; }
+            .subtitle { margin: 4px 0 0; color: #475569; font-size: 13px; }
+            .meta { text-align: right; font-size: 12px; color: #64748b; }
+            .section { margin-top: 22px; }
+            .section h2 { margin: 0 0 10px; color: #1e40af; font-size: 16px; }
+            .contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 14px; border-radius: 12px; font-size: 13px; }
+            .contact-item { color: #334155; }
+            .message-block { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+            .message-meta { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; font-size: 12px; color: #475569; }
+            .message-index { font-weight: 700; color: #1d4ed8; }
+            .message-content { padding: 12px; line-height: 1.65; font-size: 13px; background: white; }
+            .message-content p { margin: 0 0 8px; }
+            .message-content p:last-child { margin-bottom: 0; }
+            .message-content h1, .message-content h2, .message-content h3 { margin: 10px 0 6px; color: #0f172a; }
+            .message-content h1 { font-size: 20px; }
+            .message-content h2 { font-size: 17px; }
+            .message-content h3 { font-size: 15px; }
+            .message-content ul, .message-content ol { margin: 4px 0 8px 20px; }
+            .message-content li { margin-bottom: 4px; }
+            .message-content a { color: #1d4ed8; text-decoration: underline; word-break: break-all; }
+            .message-content .inline-code { background: #e2e8f0; padding: 1px 4px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+            .message-content hr { border: 0; border-top: 1px solid #cbd5e1; margin: 10px 0; }
+            .footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; }
+            @media print { body { background: white; } .page { padding: 24px 30px; } }
+          </style>
+        </head>
+        <body>
+          <div class="watermark">ACHIEVA</div>
+          <div class="page">
+            <div class="header">
+              <div class="brand">
+                <div class="logo-chip">AI</div>
+                <div>
+                  <h1 class="title">Achieva Conversation Session Report</h1>
+                  <p class="subtitle">Commercial-grade summary for sharing, archiving, and compliance use.</p>
+                </div>
+              </div>
+              <div class="meta">
+                <div>Exported: ${timestamp}</div>
+                <div>Session ID: ACH-${Date.now()}</div>
+              </div>
+            </div>
+            <div class="section">
+              <h2>Contact Information</h2>
+              <div class="contact-grid">
+                <div class="contact-item"><strong>Client Name:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Account Manager:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Email:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Phone:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Company:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Follow-up Date:</strong> [Placeholder]</div>
+              </div>
+            </div>
+            <div class="section">
+              <h2>Conversation Transcript</h2>
+              ${conversationRows || '<p style="color:#64748b">No messages available in this session.</p>'}
+            </div>
+            <div class="footer">
+              <span>Generated by Achieva AI</span>
+              <span>Confidential • Internal / Client Delivery</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+    printWindow.document.open()
+    printWindow.document.write(reportHtml)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-[#f3f5f9]">
       <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="min-h-0 flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-5xl space-y-4">
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadSession}
+              disabled={messages.length === 0}
+              className="border-[#c9d8ff] bg-white text-[#2343b2] hover:bg-[#eef3ff]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Session PDF
+            </Button>
+          </div>
           {messages.map((message) => (
             <div key={message.id} className="space-y-2">
               {message.role === "user" ? (

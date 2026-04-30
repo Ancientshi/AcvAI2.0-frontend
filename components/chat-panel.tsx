@@ -15,6 +15,7 @@ import {
   Search,
   Database,
   Loader2,
+  Download,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -120,10 +121,122 @@ export function ChatPanel({
     }
   }
 
+  const handleDownloadSession = () => {
+    const timestamp = new Date().toLocaleString()
+    const conversationRows = messages
+      .filter((message) => message.content?.trim())
+      .map((message, index) => {
+        const roleLabel = message.role === "user" ? "Client" : "Achieva AI"
+        const escapedContent = message.content
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br/>")
+
+        return `
+          <div class="message-block">
+            <div class="message-meta">
+              <span class="message-index">#${index + 1}</span>
+              <span class="message-role">${roleLabel}</span>
+            </div>
+            <div class="message-content">${escapedContent}</div>
+          </div>
+        `
+      })
+      .join("")
+
+    const reportHtml = `
+      <html>
+        <head>
+          <title>Achieva Session Report</title>
+          <style>
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Inter, Arial, sans-serif; color: #0f172a; background: #f8fafc; }
+            .page { position: relative; padding: 40px 50px; min-height: 100vh; background: white; }
+            .watermark { position: fixed; top: 45%; left: 20%; font-size: 84px; color: rgba(59, 130, 246, 0.08); transform: rotate(-24deg); font-weight: 800; pointer-events: none; }
+            .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #dbeafe; padding-bottom: 16px; margin-bottom: 28px; }
+            .brand { display: flex; align-items: center; gap: 12px; }
+            .logo-chip { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, #3a6ff9, #5f7ff0); color: white; display:flex; align-items:center; justify-content:center; font-weight: 700; }
+            .title { font-size: 22px; font-weight: 700; margin: 0; }
+            .subtitle { margin: 4px 0 0; color: #475569; font-size: 13px; }
+            .meta { text-align: right; font-size: 12px; color: #64748b; }
+            .section { margin-top: 22px; }
+            .section h2 { margin: 0 0 10px; color: #1e40af; font-size: 16px; }
+            .contact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; background: #eff6ff; border: 1px solid #bfdbfe; padding: 14px; border-radius: 12px; font-size: 13px; }
+            .contact-item { color: #334155; }
+            .message-block { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+            .message-meta { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; font-size: 12px; color: #475569; }
+            .message-index { font-weight: 700; color: #1d4ed8; }
+            .message-content { padding: 12px; line-height: 1.65; font-size: 13px; background: white; }
+            .footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; }
+            @media print { body { background: white; } .page { padding: 24px 30px; } }
+          </style>
+        </head>
+        <body>
+          <div class="watermark">ACHIEVA</div>
+          <div class="page">
+            <div class="header">
+              <div class="brand">
+                <div class="logo-chip">AI</div>
+                <div>
+                  <h1 class="title">Achieva Conversation Session Report</h1>
+                  <p class="subtitle">Commercial-grade summary for sharing, archiving, and compliance use.</p>
+                </div>
+              </div>
+              <div class="meta">
+                <div>Exported: ${timestamp}</div>
+                <div>Session ID: ACH-${Date.now()}</div>
+              </div>
+            </div>
+            <div class="section">
+              <h2>Contact Information</h2>
+              <div class="contact-grid">
+                <div class="contact-item"><strong>Client Name:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Account Manager:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Email:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Phone:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Company:</strong> [Placeholder]</div>
+                <div class="contact-item"><strong>Follow-up Date:</strong> [Placeholder]</div>
+              </div>
+            </div>
+            <div class="section">
+              <h2>Conversation Transcript</h2>
+              ${conversationRows || '<p style="color:#64748b">No messages available in this session.</p>'}
+            </div>
+            <div class="footer">
+              <span>Generated by Achieva AI</span>
+              <span>Confidential • Internal / Client Delivery</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `
+
+    const printWindow = window.open("", "_blank")
+    if (!printWindow) return
+    printWindow.document.open()
+    printWindow.document.write(reportHtml)
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-[#f3f5f9]">
       <div ref={messagesContainerRef} onScroll={handleMessagesScroll} className="min-h-0 flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-5xl space-y-4">
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadSession}
+              disabled={messages.length === 0}
+              className="border-[#c9d8ff] bg-white text-[#2343b2] hover:bg-[#eef3ff]"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download Session PDF
+            </Button>
+          </div>
           {messages.map((message) => (
             <div key={message.id} className="space-y-2">
               {message.role === "user" ? (

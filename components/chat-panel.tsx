@@ -123,86 +123,15 @@ export function ChatPanel({
 
   const handleDownloadSession = () => {
     const timestamp = new Date().toLocaleString()
-
-    const toSafeHtml = (value: string) =>
-      value
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-
-    const renderInlineMarkdownForPdf = (value: string) => {
-      let html = toSafeHtml(value)
-      html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-      html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1<em>$2</em>")
-      html = html.replace(/`([^`\n]+)`/g, '<code class="inline-code">$1</code>')
-      return html
-    }
-
-    const renderMarkdownForPdf = (value: string) => {
-      const lines = value.split("\n")
-      const htmlBlocks: string[] = []
-      let listType: "ul" | "ol" | null = null
-      let listItems: string[] = []
-
-      const flushList = () => {
-        if (!listType || listItems.length === 0) return
-        const tag = listType
-        htmlBlocks.push(`<${tag}>${listItems.map((item) => `<li>${item}</li>`).join("")}</${tag}>`)
-        listType = null
-        listItems = []
-      }
-
-      for (const rawLine of lines) {
-        const line = rawLine.trimEnd()
-        if (!line.trim()) {
-          flushList()
-          continue
-        }
-        if (/^###\s+/.test(line)) {
-          flushList()
-          htmlBlocks.push(`<h3>${renderInlineMarkdownForPdf(line.replace(/^###\s+/, ""))}</h3>`)
-          continue
-        }
-        if (/^##\s+/.test(line)) {
-          flushList()
-          htmlBlocks.push(`<h2>${renderInlineMarkdownForPdf(line.replace(/^##\s+/, ""))}</h2>`)
-          continue
-        }
-        if (/^#\s+/.test(line)) {
-          flushList()
-          htmlBlocks.push(`<h1>${renderInlineMarkdownForPdf(line.replace(/^#\s+/, ""))}</h1>`)
-          continue
-        }
-        if (/^\s*[-*]\s+/.test(line)) {
-          if (listType !== "ul") flushList(), (listType = "ul")
-          listItems.push(renderInlineMarkdownForPdf(line.replace(/^\s*[-*]\s+/, "")))
-          continue
-        }
-        if (/^\s*\d+[.)]\s+/.test(line)) {
-          if (listType !== "ol") flushList(), (listType = "ol")
-          listItems.push(renderInlineMarkdownForPdf(line.replace(/^\s*\d+[.)]\s+/, "")))
-          continue
-        }
-        if (/^(-{3,}|_{3,}|\*{3,})$/.test(line.trim())) {
-          flushList()
-          htmlBlocks.push("<hr/>")
-          continue
-        }
-
-        flushList()
-        htmlBlocks.push(`<p>${renderInlineMarkdownForPdf(line)}</p>`)
-      }
-
-      flushList()
-      return htmlBlocks.join("")
-    }
-
     const conversationRows = messages
       .filter((message) => message.content?.trim())
       .map((message, index) => {
         const roleLabel = message.role === "user" ? "Client" : "Achieva AI"
-        const formattedContent = renderMarkdownForPdf(message.content)
+        const escapedContent = message.content
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br/>")
 
         return `
           <div class="message-block">
@@ -210,7 +139,7 @@ export function ChatPanel({
               <span class="message-index">#${index + 1}</span>
               <span class="message-role">${roleLabel}</span>
             </div>
-            <div class="message-content">${formattedContent}</div>
+            <div class="message-content">${escapedContent}</div>
           </div>
         `
       })
@@ -239,17 +168,6 @@ export function ChatPanel({
             .message-meta { display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 8px 12px; font-size: 12px; color: #475569; }
             .message-index { font-weight: 700; color: #1d4ed8; }
             .message-content { padding: 12px; line-height: 1.65; font-size: 13px; background: white; }
-            .message-content p { margin: 0 0 8px; }
-            .message-content p:last-child { margin-bottom: 0; }
-            .message-content h1, .message-content h2, .message-content h3 { margin: 10px 0 6px; color: #0f172a; }
-            .message-content h1 { font-size: 20px; }
-            .message-content h2 { font-size: 17px; }
-            .message-content h3 { font-size: 15px; }
-            .message-content ul, .message-content ol { margin: 4px 0 8px 20px; }
-            .message-content li { margin-bottom: 4px; }
-            .message-content a { color: #1d4ed8; text-decoration: underline; word-break: break-all; }
-            .message-content .inline-code { background: #e2e8f0; padding: 1px 4px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-            .message-content hr { border: 0; border-top: 1px solid #cbd5e1; margin: 10px 0; }
             .footer { margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 14px; font-size: 12px; color: #64748b; display: flex; justify-content: space-between; }
             @media print { body { background: white; } .page { padding: 24px 30px; } }
           </style>
